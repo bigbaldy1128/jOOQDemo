@@ -1,3 +1,4 @@
+import com.sun.org.apache.bcel.internal.classfile.Code;
 import org.jooq.*;
 import org.jooq.impl.DSL;
 
@@ -12,20 +13,27 @@ public class Main {
         String password = "ct123!@#";
         String url = "jdbc:mysql://localhost:3306/codesafe";
 
-        // Connection is the only JDBC resource that we need
-        // PreparedStatement and ResultSet are handled by jOOQ, internally
         try (Connection conn = DriverManager.getConnection(url, userName, password);
-             DSLContext create = DSL.using(conn, SQLDialect.MYSQL)) {
-            create.transaction(configuration -> {
-                List<CodeVO> result = create.select().from("chk_code").fetch().map(record -> record.into(CodeVO.class));
-                for (CodeVO codeVO : result) {
-                    System.out.println(codeVO.getCode_name());
-                }
-            });
+             DSLContext context = DSL.using(conn, SQLDialect.MYSQL)) {
+            query(context);
         }
-        // For the sake of this tutorial, let's keep exception handling simple
         catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    static void query(DSLContext context) {
+        List<CodeVO> result = context.select().from("chk_code").fetch().into(CodeVO.class);
+        for (CodeVO codeVO : result) {
+            System.out.println(codeVO.getCode_name());
+        }
+    }
+
+    static void insert(DSLContext context) {
+        context.transaction(p->{
+            CodeVO codeVO=new CodeVO();
+            codeVO.setCode_name("jooqTest");
+            context.query("insert into chk_code(code_name) values(?)",codeVO.getCode_name()).execute();
+        });
     }
 }
